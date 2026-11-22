@@ -1,0 +1,12 @@
+build/
+.gradle/
+.cxx/
+.kotlin/
+local.properties
+# The release signing setup stays private.
+signing.properties
+signing.properties.*
+*.jks
+*.keystore
+*.apk
+*.aab
