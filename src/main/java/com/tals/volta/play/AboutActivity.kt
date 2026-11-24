@@ -7,6 +7,11 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
@@ -29,7 +34,11 @@ class AboutActivity : Activity() {
         super.onCreate(savedInstanceState)
         val voltaOs = packageManager.getLaunchIntentForPackage(VOLTOS)
 
-        val pad = (24 * resources.displayMetrics.density).toInt()
+        val dp = resources.displayMetrics.density
+        val pad = (24 * dp).toInt()
+        // Volta OS's look (ui/theme/Color.kt there): always dark, light grey text,
+        // the blue pill for the page's one action.
+        window.setBackgroundDrawable(ColorDrawable(PAGE_BG))
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
@@ -48,17 +57,26 @@ class AboutActivity : Activity() {
                 bottomMargin = pad
             })
         }
-        layout.addView(TextView(this).apply {
-            text = getString(R.string.app_name)
-            textSize = 22f
-            setPadding(0, 0, 0, pad / 2)
-        })
+        // No title: the logo above already says which app this is.
         layout.addView(TextView(this).apply {
             text = getString(R.string.about_text)
             textSize = 16f
+            setTextColor(BODY_TEXT)
+            setLineSpacing(0f, 1.2f)
             setPadding(0, 0, 0, pad)
         })
         layout.addView(Button(this).apply {
+            // Volta OS's primary button: a 56 dp blue pill, near-black semibold text.
+            isAllCaps = false
+            textSize = 16f
+            typeface = semibold()
+            setTextColor(ON_ACCENT)
+            stateListAnimator = null
+            background = RippleDrawable(
+                ColorStateList.valueOf(0x33000000),
+                GradientDrawable().apply { setColor(BRAND_BLUE); cornerRadius = 28 * dp },
+                null
+            )
             if (voltaOs != null) {
                 text = getString(R.string.open_voltos)
                 setOnClickListener { runCatching { startActivity(voltaOs) } }
@@ -66,7 +84,7 @@ class AboutActivity : Activity() {
                 text = getString(R.string.get_voltos)
                 setOnClickListener { openStore() }
             }
-        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (56 * dp).toInt()).apply {
             // Set in from the text's edges, so it does not run the page's full width.
             marginStart = pad
             marginEnd = pad
@@ -77,7 +95,11 @@ class AboutActivity : Activity() {
         page.addView(layout, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         page.addView(Button(this, null, android.R.attr.borderlessButtonStyle).apply {
             text = getString(R.string.legal_title)
+            // Volta OS's text buttons ("J'ai besoin d'aide"): blue, semibold.
+            isAllCaps = false
             textSize = 14f
+            typeface = semibold()
+            setTextColor(BRAND_BLUE)
             setOnClickListener { startActivity(Intent(this@AboutActivity, LegalActivity::class.java)) }
         }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             gravity = Gravity.CENTER_HORIZONTAL
@@ -89,6 +111,7 @@ class AboutActivity : Activity() {
         // padding with the bars' insets, which left the text against the edges.
         setContentView(FrameLayout(this).apply {
             fitsSystemWindows = true
+            setBackgroundColor(PAGE_BG)
             addView(page, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         })
 
@@ -97,6 +120,11 @@ class AboutActivity : Activity() {
         // the icon again) it shows, without sending the user away a second time.
         if (savedInstanceState == null && voltaOs != null) runCatching { startActivity(voltaOs) }
     }
+
+    /** Semibold where the system has weights (Android 9+), bold before. */
+    private fun semibold(): Typeface =
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) Typeface.create(Typeface.DEFAULT, 600, false)
+        else Typeface.DEFAULT_BOLD
 
     /** Google Play's app when there is one, its web page otherwise. */
     private fun openStore() {
@@ -141,6 +169,12 @@ class AboutActivity : Activity() {
     }
 
     companion object {
+        /** Volta OS's colours: background, body text, BrandBlue and the text on it. */
+        private const val PAGE_BG = 0xFF0F1216.toInt()
+        private const val BODY_TEXT = 0xFFC3C8D0.toInt()
+        private const val BRAND_BLUE = 0xFF5AAEFF.toInt()
+        private const val ON_ACCENT = 0xFF0B0F14.toInt()
+
         /** The app this module serves. */
         const val VOLTOS = "com.tals.volta.os"
         const val STORE_URL = "https://play.google.com/store/apps/details?id=$VOLTOS"
